@@ -33,6 +33,21 @@ module BridgeApi
         client.get_customer_wallet(customer_id, wallet_id)
       end
 
+      def self.get_customer_virtual_accounts(client, customer_id, params = {})
+        # Use the client's public API to make the request
+        client.list_customer_virtual_accounts(customer_id, params)
+      end
+
+      def self.get_customer_virtual_account(client, customer_id, virtual_account_id)
+        # Use the client's public API to make the request
+        client.get_customer_virtual_account(customer_id, virtual_account_id)
+      end
+
+      def self.create_customer_virtual_account(client, customer_id, params, idempotency_key: nil)
+        # Use the client's public API to make the request
+        client.create_customer_virtual_account(customer_id, params, idempotency_key: idempotency_key)
+      end
+
       def initialize(attributes = {})
         super
       end
@@ -72,6 +87,18 @@ module BridgeApi
 
       def get_wallet(client, wallet_id)
         self.class.get_customer_wallet(client, id, wallet_id)
+      end
+
+      def virtual_accounts(client, params = {})
+        self.class.get_customer_virtual_accounts(client, id, params)
+      end
+
+      def get_virtual_account(client, virtual_account_id)
+        self.class.get_customer_virtual_account(client, id, virtual_account_id)
+      end
+
+      def create_virtual_account(client, params, idempotency_key: nil)
+        self.class.create_customer_virtual_account(client, id, params, idempotency_key: idempotency_key)
       end
 
       private

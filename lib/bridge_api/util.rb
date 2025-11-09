@@ -13,6 +13,7 @@ module BridgeApi
         'webhook' => BridgeApi::Resources::Webhook,
         'webhook_event' => BridgeApi::Resources::WebhookEvent,
         'webhook_event_delivery_log' => BridgeApi::Resources::WebhookEventDeliveryLog,
+        'virtual_account' => BridgeApi::Resources::VirtualAccount,
       }
     end
 
@@ -25,7 +26,7 @@ module BridgeApi
         data.map { |item| convert_to_bridged_object(item, opts) }
       when Hash
         # Check if this is a list object (has 'data' key, optional 'count')
-        if (data.key?('data') || data.key?(:data))
+        if data.key?('data') || data.key?(:data)
           # This looks like a list response, convert to ListObject
           list_data = symbolize_keys(data)
           # Convert the data array items recursively if data exists

@@ -16,7 +16,7 @@ module BridgeApi
         client.list_webhooks(params)
       end
 
-      def self.retrieve(client, id, params = {})
+      def self.retrieve(client, id, _params = {})
         client.get_webhook(id)
       end
 

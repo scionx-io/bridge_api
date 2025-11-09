@@ -51,6 +51,31 @@ module BridgeApi
           request(:get, "customers/#{customer_id}/wallets/#{wallet_id}")
         end
 
+        # Virtual Account methods
+        define_method('list_customer_virtual_accounts') do |customer_id, params = {}|
+          request(:get, "customers/#{customer_id}/virtual_accounts", params)
+        end
+
+        define_method('get_customer_virtual_account') do |customer_id, virtual_account_id|
+          request(:get, "customers/#{customer_id}/virtual_accounts/#{virtual_account_id}")
+        end
+
+        define_method('create_customer_virtual_account') do |customer_id, params, idempotency_key: nil|
+          request_with_idempotency(:post, "customers/#{customer_id}/virtual_accounts", params, idempotency_key)
+        end
+
+        define_method('update_customer_virtual_account') do |customer_id, virtual_account_id, params|
+          request(:put, "customers/#{customer_id}/virtual_accounts/#{virtual_account_id}", params)
+        end
+
+        define_method('deactivate_customer_virtual_account') do |customer_id, virtual_account_id, idempotency_key: nil|
+          request_with_idempotency(:post, "customers/#{customer_id}/virtual_accounts/#{virtual_account_id}/deactivate", {}, idempotency_key)
+        end
+
+        define_method('reactivate_customer_virtual_account') do |customer_id, virtual_account_id, idempotency_key: nil|
+          request_with_idempotency(:post, "customers/#{customer_id}/virtual_accounts/#{virtual_account_id}/reactivate", {}, idempotency_key)
+        end
+
         define_method('create_customer_wallet') do |customer_id, chain, idempotency_key: nil|
           payload = { chain: chain }
           request_with_idempotency(:post, "customers/#{customer_id}/wallets", payload, idempotency_key)
@@ -215,13 +240,17 @@ module BridgeApi
     end
 
     def map_resource_to_hint(resource_name)
-      {
-        'wallet' => 'wallet',
-        'customer' => 'customer',
-        'history' => 'transaction_history',
-        'event' => 'webhook_event',
-        'log' => 'webhook_event_delivery_log',
-      }[resource_name]
+      # Map plural resource names to their singular equivalents for resource hints
+      resource_name_mapping = {
+        'wallets' => 'wallet',
+        'customers' => 'customer',
+        'histories' => 'transaction_history',
+        'events' => 'webhook_event',
+        'logs' => 'webhook_event_delivery_log',
+        'virtual_accounts' => 'virtual_account',
+      }
+      
+      resource_name_mapping[resource_name] || resource_name.chomp('s')  # fallback to chomping 's' for other resources
     end
 
     def build_error(status, response)
