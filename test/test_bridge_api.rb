@@ -43,12 +43,12 @@ class BridgeApiTest < Minitest::Test
 
   def test_successful_api_request
     # Mock the API response
-    stub_request(:get, 'https://api.sandbox.bridge.xyz/v0/customers')
-      .with(headers: { 'Api-Key' => 'test-key-123' })
-      .to_return(
+    stub_request(:get, 'https://api.sandbox.bridge.xyz/v0/customers').
+      with(headers: { 'Api-Key' => 'test-key-123' }).
+      to_return(
         status: 200,
         body: { data: [{ id: 'cust_123', email: 'test@example.com' }] }.to_json,
-        headers: { 'Content-Type' => 'application/json' }
+        headers: { 'Content-Type' => 'application/json' },
       )
 
     client = BridgeApi::Client.new(api_key: 'test-key-123', sandbox_mode: true)
@@ -61,8 +61,8 @@ class BridgeApiTest < Minitest::Test
 
   def test_api_authentication_error
     # Mock 401 response
-    stub_request(:get, 'https://api.sandbox.bridge.xyz/v0/customers')
-      .to_return(status: 401, body: { message: 'Invalid API key' }.to_json)
+    stub_request(:get, 'https://api.sandbox.bridge.xyz/v0/customers').
+      to_return(status: 401, body: { message: 'Invalid API key' }.to_json)
 
     client = BridgeApi::Client.new(api_key: 'invalid-key', sandbox_mode: true)
     response = client.list_customers
