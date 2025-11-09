@@ -1,5 +1,16 @@
 # frozen_string_literal: true
 module BridgeApi
+  # Client for interacting with the Bridge.xyz API
+  #
+  # @example Initialize with API key
+  #   client = BridgeApi::Client.new(api_key: 'your-api-key', sandbox_mode: true)
+  #
+  # @example Using global configuration
+  #   BridgeApi.config do |c|
+  #     c.api_key = 'your-api-key'
+  #     c.sandbox_mode = true
+  #   end
+  #   client = BridgeApi::Client.new
   class Client
     include HTTParty
 
@@ -13,6 +24,19 @@ module BridgeApi
     READ_ONLY_RESOURCES = %i[lists].freeze
     MAX_RETRIES = 3
 
+    # Initialize a new Bridge API client
+    #
+    # @param api_key [String, nil] Your Bridge API key. If not provided, uses global configuration.
+    # @param sandbox_mode [Boolean] Whether to use sandbox environment (default: true)
+    #
+    # @raise [ArgumentError] if api_key is nil or empty and no global api_key is configured
+    #
+    # @example With explicit API key
+    #   client = BridgeApi::Client.new(api_key: 'your-key', sandbox_mode: true)
+    #
+    # @example Using global configuration
+    #   BridgeApi.api_key = 'your-key'
+    #   client = BridgeApi::Client.new
     def initialize(api_key: nil, sandbox_mode: true)
       @api_key = api_key || BridgeApi.api_key
       raise ArgumentError, 'API key must be provided' unless @api_key&.strip&.length&.positive?
@@ -90,15 +114,26 @@ module BridgeApi
     end
   end
 
+  # Represents a response from the Bridge API
+  #
+  # @attr_reader [Integer] status_code HTTP status code of the response
+  # @attr_reader [Hash, nil] data Parsed response data (nil if error occurred)
+  # @attr_reader [ApiError, nil] error Error object (nil if successful)
   class Response
     attr_reader :status_code, :data, :error
 
+    # @param status_code [Integer] HTTP status code
+    # @param data [Hash, nil] Response data
+    # @param error [ApiError, nil] Error object
     def initialize(status_code, data, error)
       @status_code = status_code
       @data = data
       @error = error
     end
 
+    # Check if the request was successful
+    #
+    # @return [Boolean] true if no error occurred, false otherwise
     def success?
       @error.nil?
     end

@@ -4,11 +4,38 @@ require 'json'
 require 'securerandom'
 require_relative 'bridge_api/version'
 
+# Ruby gem for Bridge.xyz API integration
+#
+# @example Basic usage
+#   BridgeApi.config do |c|
+#     c.api_key = 'your-api-key'
+#     c.sandbox_mode = true
+#   end
+#
+#   client = BridgeApi::Client.new
+#   response = client.list_customers
 module BridgeApi
   class << self
-    attr_accessor :api_key, :sandbox_mode
+    # @!attribute [rw] api_key
+    #   @return [String, nil] Global API key for Bridge.xyz
+    attr_accessor :api_key
+
+    # @!attribute [rw] sandbox_mode
+    #   @return [Boolean, nil] Whether to use sandbox environment
+    attr_accessor :sandbox_mode
+
     attr_writer :base_url
 
+    # Configure global settings for Bridge API
+    #
+    # @yield [self] Configuration block
+    # @yieldparam config [BridgeApi] The module to configure
+    #
+    # @example
+    #   BridgeApi.config do |c|
+    #     c.api_key = 'your-key'
+    #     c.sandbox_mode = true
+    #   end
     def config
       yield self
     end
