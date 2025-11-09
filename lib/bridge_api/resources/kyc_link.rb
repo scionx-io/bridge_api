@@ -4,13 +4,19 @@ require 'time'
 module BridgeApi
   module Resources
     # Represents a KYC Link for individual or business verification
-    class KycLink < BaseResource
+    class KycLink < APIResource
       OBJECT_NAME = 'kyc_link'
 
-      # Class method to create a KYC link
-      def self.create(client, params = {})
-        # Use the client's automatically generated create method
-        client.create_kyc_link(params)
+      def self.resource_path
+        '/kyc_links'
+      end
+
+      # Include the operations this resource supports
+      include BridgeApi::APIOperations::Create
+
+      # Class method to list all KYC links
+      def self.list(client, params = {})
+        client.list_kyc_links(params)
       end
 
       # Specific accessor methods for convenience
