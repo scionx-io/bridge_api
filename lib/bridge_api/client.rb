@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 module BridgeApi
   class Client
     include HTTParty
@@ -14,7 +15,7 @@ module BridgeApi
 
     def initialize(api_key: nil, sandbox_mode: true)
       @api_key = api_key || BridgeApi.api_key
-      raise ArgumentError, "API key must be provided" unless @api_key&.strip&.length&.positive?
+      raise ArgumentError, 'API key must be provided' unless @api_key&.strip&.length&.positive?
 
       @base_url = sandbox_mode ? 'https://api.sandbox.bridge.xyz/v0' : 'https://api.bridge.xyz/v0'
       configure_client
@@ -46,14 +47,14 @@ module BridgeApi
       self.class.headers(
         'Api-Key' => @api_key,
         'Content-Type' => 'application/json',
-        'User-Agent' => 'BridgeApi Ruby Gem'
+        'User-Agent' => 'BridgeApi Ruby Gem',
       )
       self.class.default_timeout(30)
     end
 
     def request(method, endpoint, payload = {}, retries = 0)
       options = {}
-      if [:get, :delete].include?(method)
+      if %i[get delete].include?(method)
         options[:query] = payload unless payload.empty?
       else
         options[:body] = payload.to_json unless payload.empty?
@@ -76,13 +77,15 @@ module BridgeApi
       case response.code
       when 200..299
         Response.new(response.code, response.parsed_response, nil)
-      when 400 then Response.new(response.code, nil, ApiError.new(response.parsed_response&.dig('message') || 'Bad request'))
+      when 400 then Response.new(response.code, nil,
+                                 ApiError.new(response.parsed_response&.dig('message') || 'Bad request'))
       when 401 then Response.new(response.code, nil, AuthenticationError.new('Invalid API key'))
       when 403 then Response.new(response.code, nil, ForbiddenError.new(response.parsed_response&.dig('message')))
       when 404 then Response.new(response.code, nil, NotFoundError.new('Resource not found'))
       when 429 then Response.new(response.code, nil, RateLimitError.new(response.headers['X-RateLimit-Reset']))
       when 503 then Response.new(response.code, nil, ServiceUnavailableError.new('Service temporarily unavailable'))
-      else Response.new(response.code, nil, ApiError.new(response.parsed_response&.dig('message') || 'API request failed'))
+      else Response.new(response.code, nil,
+                        ApiError.new(response.parsed_response&.dig('message') || 'API request failed'))
       end
     end
   end

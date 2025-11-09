@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'minitest/autorun'
 require_relative '../lib/bridge_api'
 
@@ -12,7 +13,7 @@ class BridgeApiTest < Minitest::Test
     end
 
     assert_raises(ArgumentError) do
-      BridgeApi::Client.new(api_key: "")
+      BridgeApi::Client.new(api_key: '')
     end
   end
 

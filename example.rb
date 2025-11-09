@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 # Example usage of the Bridge API Ruby gem
 
 require_relative 'lib/bridge_api'
@@ -5,14 +6,14 @@ require_relative 'lib/bridge_api'
 # Configure the gem globally
 BridgeApi.config do |config|
   config.api_key = 'your-api-key-here'
-  config.sandbox_mode = true  # Set to false for production
+  config.sandbox_mode = true # Set to false for production
 end
 
 # Initialize a client
 client = BridgeApi::Client.new
 
 # Example: List wallets
-puts "Listing wallets..."
+puts 'Listing wallets...'
 response = client.list_wallets
 if response.success?
   puts "Wallets: #{response.data}"

@@ -1,0 +1,116 @@
+AllCops:
+  TargetRubyVersion: 2.5
+  NewCops: enable
+  SuggestExtensions: false
+
+Style/StringLiterals:
+  Enabled: true
+  EnforcedStyle: single_quotes
+
+Style/StringLiteralsInInterpolation:
+  Enabled: true
+  EnforcedStyle: single_quotes
+
+Layout/LineLength:
+  Max: 120
+
+Metrics/MethodLength:
+  Max: 50
+
+Metrics/AbcSize:
+  Max: 50
+
+Metrics/CyclomaticComplexity:
+  Max: 15
+
+Metrics/PerceivedComplexity:
+  Max: 15
+
+Metrics/ClassLength:
+  Max: 250
+
+Metrics/BlockLength:
+  Max: 50
+
+Style/Documentation:
+  Enabled: false
+
+Style/ClassAndModuleChildren:
+  Enabled: false
+
+Style/EachForSimpleLoop:
+  Enabled: false
+
+Style/AndOr:
+  Enabled: true
+  EnforcedStyle: always
+
+Style/ConditionalAssignment:
+  Enabled: false
+
+Style/RedundantReturn:
+  Enabled: false
+
+Style/RedundantSelf:
+  Enabled: false
+
+Style/MutableConstant:
+  Enabled: false
+
+Style/FrozenStringLiteralComment:
+  Enabled: true
+  EnforcedStyle: always
+
+Layout/ExtraSpacing:
+  Enabled: true
+
+Style/FormatString:
+  Enabled: false
+
+Style/PercentLiteralDelimiters:
+  Enabled: false
+
+Style/WordArray:
+  Enabled: false
+
+Style/NumericLiterals:
+  Enabled: false
+
+Style/TrailingCommaInArguments:
+  EnforcedStyleForMultiline: comma
+
+Style/TrailingCommaInArrayLiteral:
+  EnforcedStyleForMultiline: comma
+
+Style/TrailingCommaInHashLiteral:
+  EnforcedStyleForMultiline: comma
+
+Layout/EmptyLines:
+  Enabled: false
+
+Layout/EmptyLineAfterMagicComment:
+  Enabled: false
+
+Layout/EmptyLineBetweenDefs:
+  Enabled: true
+  AllowAdjacentOneLineDefs: true
+
+Layout/ParameterAlignment:
+  Enabled: false
+
+Layout/DotPosition:
+  Enabled: true
+  EnforcedStyle: trailing
+
+Layout/SpaceAroundOperators:
+  Enabled: false
+
+Naming/FileName:
+  Exclude:
+    - 'bridge_api.gemspec'
+
+Naming/AccessorMethodName:
+  Enabled: false
+
+Style/SafeNavigationChainLength:
+  Enabled: false
