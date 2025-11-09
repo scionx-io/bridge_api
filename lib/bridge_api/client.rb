@@ -1,18 +1,13 @@
 # frozen_string_literal: true
+
 module BridgeApi
-  # Client for interacting with the Bridge.xyz API
-  #
-  # @example Initialize with API key
-  #   client = BridgeApi::Client.new(api_key: 'your-api-key', sandbox_mode: true)
-  #
-  # @example Using global configuration
-  #   BridgeApi.config do |c|
-  #     c.api_key = 'your-api-key'
-  #     c.sandbox_mode = true
-  #   end
-  #   client = BridgeApi::Client.new
   class Client
     include HTTParty
+
+    BASE_URLS = {
+      sandbox: 'https://api.sandbox.bridge.xyz/v0',
+      production: 'https://api.bridge.xyz/v0',
+    }.freeze
 
     RESOURCES = %i[
       kyc_links wallets customers transfers external_accounts virtual_accounts
@@ -24,140 +19,161 @@ module BridgeApi
     READ_ONLY_RESOURCES = %i[lists].freeze
     MAX_RETRIES = 3
 
-    # Initialize a new Bridge API client
-    #
-    # @param api_key [String, nil] Your Bridge API key. If not provided, uses global configuration.
-    # @param sandbox_mode [Boolean] Whether to use sandbox environment (default: true)
-    #
-    # @raise [ArgumentError] if api_key is nil or empty and no global api_key is configured
-    #
-    # @example With explicit API key
-    #   client = BridgeApi::Client.new(api_key: 'your-key', sandbox_mode: true)
-    #
-    # @example Using global configuration
-    #   BridgeApi.api_key = 'your-key'
-    #   client = BridgeApi::Client.new
     def initialize(api_key: nil, sandbox_mode: true)
       @api_key = api_key || BridgeApi.api_key
-      raise ArgumentError, 'API key must be provided' unless @api_key&.strip&.length&.positive?
+      raise ArgumentError, 'API key must be provided' if @api_key.to_s.strip.empty?
 
-      @base_url = sandbox_mode ? 'https://api.sandbox.bridge.xyz/v0' : 'https://api.bridge.xyz/v0'
+      @base_url = sandbox_mode ? BASE_URLS[:sandbox] : BASE_URLS[:production]
       configure_client
     end
 
-    # Dynamically define CRUD methods for resources
-    RESOURCES.each do |resource|
+    # --- Dynamic Endpoints ---
+    (RESOURCES + READ_ONLY_RESOURCES).each do |resource|
       singular = resource.to_s.sub(/s$/, '')
 
-      case resource
-      when :wallets
-        define_method("list_#{resource}") { |params = {}| list_wallets_request(params) }
-      else
-        define_method("list_#{resource}") { |params = {}| request(:get, resource.to_s, params) }
+      define_method("list_#{resource}") { |params = {}| request(:get, resource, params) }
+      define_method("get_#{singular}")  { |id| request(:get, "#{resource}/#{id}") }
+
+      next if READ_ONLY_RESOURCES.include?(resource)
+
+      define_method("create_#{singular}") do |payload|
+        request(:post, resource, payload)
       end
-
-      define_method("get_#{singular}") { |id| request(:get, "#{resource}/#{id}") }
-      define_method("create_#{singular}") { |payload| request(:post, resource.to_s, payload) }
     end
 
-    READ_ONLY_RESOURCES.each do |resource|
-      define_method("get_#{resource}") { |params = {}| request(:get, resource.to_s, params) }
-    end
-
+    # --- Special Endpoints ---
     def get_exchange_rates(params = {})
       request(:get, 'exchange_rates', params)
     end
 
-    private
+    def get_wallet_total_balances
+      response = request(:get, 'wallets/total_balances')
+      return response unless response.success? && response.data.is_a?(Array)
 
-    # Special handling for listing wallets to return Wallet objects instead of raw JSON
-    def list_wallets_request(params = {})
-      response = request(:get, 'wallets', params)
-
-      # If the request was successful and we have data, convert to Wallet objects
-      if response.success? && response.data && response.data['data']
-        wallets_collection = BridgeApi::Models::WalletsCollection.new(response.data)
-        # Return a new response object with the collection instead of raw data
-        Response.new(response.status_code, wallets_collection, nil)
-      else
-        response
-      end
+      converted = response.data.map { |item| BridgeApi::Resources::TotalBalance.new(item) }
+      Response.new(response.status_code, converted, nil)
     end
+
+    private
 
     def configure_client
       self.class.base_uri(@base_url)
       self.class.headers(
         'Api-Key' => @api_key,
         'Content-Type' => 'application/json',
-        'User-Agent' => 'BridgeApi Ruby Gem',
+        'User-Agent' => 'BridgeApi Ruby Client',
       )
       self.class.default_timeout(30)
     end
 
     def request(method, endpoint, payload = {}, retries = 0)
-      options = {}
-      if %i[get delete].include?(method)
-        options[:query] = payload unless payload.empty?
-      else
-        options[:body] = payload.to_json unless payload.empty?
-        options[:headers] ||= {}
-        options[:headers]['Idempotency-Key'] = SecureRandom.uuid if method == :post
-      end
-
+      options = build_request_options(method, payload)
       response = self.class.send(method, "/#{endpoint}", options)
 
       if response.code == 429 && retries < MAX_RETRIES
-        sleep_time = response.headers['Retry-After']&.to_i || 1
-        sleep(sleep_time)
-        return request(method, endpoint, payload, retries + 1)
+        return retry_request(method, endpoint, payload, retries,
+                             response)
       end
 
       handle_response(response)
     end
 
+    def build_request_options(method, payload)
+      return { query: payload } if %i[get delete].include?(method)
+
+      {
+        body: payload.to_json,
+        headers: { 'Idempotency-Key' => SecureRandom.uuid },
+      }
+    end
+
+    def retry_request(method, endpoint, payload, retries, response)
+      sleep(response.headers['Retry-After']&.to_i || 1)
+      request(method, endpoint, payload, retries + 1)
+    end
+
     def handle_response(response)
-      case response.code
-      when 200..299
-        Response.new(response.code, response.parsed_response, nil)
-      when 400 then Response.new(response.code, nil,
-                                 ApiError.new(response.parsed_response&.dig('message') || 'Bad request'))
-      when 401 then Response.new(response.code, nil, AuthenticationError.new('Invalid API key'))
-      when 403 then Response.new(response.code, nil, ForbiddenError.new(response.parsed_response&.dig('message')))
-      when 404 then Response.new(response.code, nil, NotFoundError.new('Resource not found'))
-      when 429 then Response.new(response.code, nil, RateLimitError.new(response.headers['X-RateLimit-Reset']))
-      when 503 then Response.new(response.code, nil, ServiceUnavailableError.new('Service temporarily unavailable'))
-      else Response.new(response.code, nil,
-                        ApiError.new(response.parsed_response&.dig('message') || 'API request failed'))
+      status = response.code
+      request_path = response.request.path
+      data = if (200..299).cover?(status)
+               hint = determine_resource_hint_from_endpoint(request_path)
+               BridgeApi::Util.convert_to_bridged_object(
+                 response.parsed_response,
+                 resource_hint: hint,
+               )
+             end
+      error = data.nil? ? build_error(status, response) : nil
+      Response.new(status, data, error)
+    end
+
+    def determine_resource_hint_from_endpoint(path)
+      path_string = path.is_a?(URI) ? path.to_s : path
+      path_parts = path_string.split('/').reject(&:empty?)
+
+      resource_name = if path_parts.length.positive?
+                        first = path_parts[0]
+                        second = path_parts[1]
+                        has_id = second&.match?(/^[a-zA-Z0-9_]+$/)
+                        is_resource = first&.match?(/[a-z]+/)
+
+                        if path_parts.length >= 2 && has_id && is_resource
+                          first
+                        else
+                          path_parts.last
+                        end
+                      end
+
+      resource_name = resource_name.chomp('s') if resource_name
+
+      resource_name_to_hint = {
+        'wallet' => 'wallet',
+        'customer' => 'customer',
+      }
+
+      resource_name_to_hint[resource_name]
+    end
+
+    def build_error(status, response)
+      parsed_response = response.parsed_response
+      if parsed_response.is_a?(Hash)
+        msg = parsed_response['message']
+      elsif parsed_response.is_a?(String)
+        begin
+          json_response = JSON.parse(parsed_response)
+          msg = json_response.is_a?(Hash) ? json_response['message'] : nil
+        rescue JSON::ParserError
+          msg = nil
+        end
+      else
+        msg = nil
+      end
+
+      case status
+      when 400 then ApiError.new(msg || 'Bad request')
+      when 401 then AuthenticationError.new('Invalid API key')
+      when 403 then ForbiddenError.new(msg || 'Forbidden')
+      when 404 then NotFoundError.new('Resource not found')
+      when 429 then RateLimitError.new(response.headers['X-RateLimit-Reset'])
+      when 503 then ServiceUnavailableError.new('Service temporarily unavailable')
+      else ApiError.new(msg || 'API request failed')
       end
     end
   end
 
-  # Represents a response from the Bridge API
-  #
-  # @attr_reader [Integer] status_code HTTP status code of the response
-  # @attr_reader [Hash, nil] data Parsed response data (nil if error occurred)
-  # @attr_reader [ApiError, nil] error Error object (nil if successful)
+  # --- Response Wrapper ---
   class Response
     attr_reader :status_code, :data, :error
 
-    # @param status_code [Integer] HTTP status code
-    # @param data [Hash, nil] Response data
-    # @param error [ApiError, nil] Error object
     def initialize(status_code, data, error)
       @status_code = status_code
       @data = data
       @error = error
     end
 
-    # Check if the request was successful
-    #
-    # @return [Boolean] true if no error occurred, false otherwise
-    def success?
-      @error.nil?
-    end
+    def success? = @error.nil?
   end
 
-  # Errors
+  # --- Errors ---
   class ApiError < StandardError; end
   class AuthenticationError < ApiError; end
   class RateLimitError < ApiError; end

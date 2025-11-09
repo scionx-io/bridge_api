@@ -56,6 +56,13 @@ module BridgeApi
   end
 end
 
-require_relative 'bridge_api/models/wallet'
+require_relative 'bridge_api/base_resource'
+require_relative 'bridge_api/api_resource'
+require_relative 'bridge_api/api_operations'
+require_relative 'bridge_api/list_object'
+require_relative 'bridge_api/util'
+require_relative 'bridge_api/resources/wallet'
+require_relative 'bridge_api/resources/customer'
+require_relative 'bridge_api/resources/total_balance'
 require_relative 'bridge_api/models/wallets_collection'
 require_relative 'bridge_api/client'

@@ -172,3 +172,4 @@ config/config.yml
 config/private.json
 config/keys.json
 stripe-ruby/
+*.md

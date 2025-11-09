@@ -14,7 +14,7 @@ Gem::Specification.new do |spec|
   spec.homepage              = 'https://github.com/ScionX/bridge_api'
   spec.license               = 'MIT'
   spec.platform              = Gem::Platform::RUBY
-  spec.required_ruby_version = '>= 2.5.0'
+  spec.required_ruby_version = '>= 3.2.0'
 
   # List of files to include in the gem
   spec.files = Dir['README.md', 'LICENSE.md', 'CHANGELOG.md', 'example.rb', 'lib/**/*.rb', 'exe/**/*',

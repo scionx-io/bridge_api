@@ -3,8 +3,9 @@
 module BridgeApi
   module Models
     # Represents a collection of Bridge Wallets with pagination metadata
+    # This is maintained for backward compatibility with the existing implementation
     class WalletsCollection
-      attr_reader :data, :count, :has_more
+      attr_reader :data, :count
 
       # Initialize a WalletsCollection object from API response data
       # @param [Hash] response The API response hash
@@ -40,17 +41,20 @@ module BridgeApi
       # Make the collection enumerable to support iteration
       include Enumerable
 
-      def each(&block)
-        @data.each(&block)
+      def each(&)
+        @data.each(&)
       end
 
       private
 
-      # Parse an array of wallet hashes into Wallet objects
-      # @param [Array<Hash>] wallet_hashes Array of wallet data from API
-      # @return [Array<Wallet>] Array of Wallet objects
       def parse_wallets(wallet_hashes)
-        wallet_hashes.map { |wallet_hash| Wallet.new(wallet_hash) }
+        wallet_hashes.map do |wallet_hash|
+          if wallet_hash.is_a?(Hash)
+            BridgeApi::Resources::Wallet.new(wallet_hash)
+          else
+            wallet_hash
+          end
+        end
       end
     end
   end

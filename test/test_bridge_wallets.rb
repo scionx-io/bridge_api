@@ -44,7 +44,7 @@ class BridgeWalletsTest < Minitest::Test
     assert response.success?
     assert_equal 200, response.status_code
     refute_nil response.data
-    assert_instance_of BridgeApi::Models::WalletsCollection, response.data
+    assert_instance_of BridgeApi::ListObject, response.data
     assert_equal 1, response.data.count
     assert_equal 1, response.data.size
     assert_equal 'bw_123', response.data[0].id
@@ -82,7 +82,7 @@ class BridgeWalletsTest < Minitest::Test
     assert response.success?
     assert_equal 200, response.status_code
     refute_nil response.data
-    assert_instance_of BridgeApi::Models::WalletsCollection, response.data
+    assert_instance_of BridgeApi::ListObject, response.data
     assert_equal 25, response.data.count
     assert_equal 1, response.data.size
     assert_equal 'bw_789', response.data[0].id
@@ -119,7 +119,7 @@ class BridgeWalletsTest < Minitest::Test
     assert response.success?
     assert_equal 200, response.status_code
     refute_nil response.data
-    assert_instance_of BridgeApi::Models::WalletsCollection, response.data
+    assert_instance_of BridgeApi::ListObject, response.data
     assert_equal 5, response.data.count
     assert_equal 1, response.data.size
     assert_equal 'bw_888', response.data[0].id
@@ -245,7 +245,7 @@ class BridgeWalletsTest < Minitest::Test
     assert response.success?
     assert_equal 200, response.status_code
     refute_nil response.data
-    assert_instance_of BridgeApi::Models::WalletsCollection, response.data
+    assert_instance_of BridgeApi::ListObject, response.data
     assert_equal 50, response.data.count
     assert_equal 2, response.data.size
     assert_equal 'bw_555', response.data[0].id
