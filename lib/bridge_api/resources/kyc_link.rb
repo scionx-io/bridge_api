@@ -14,6 +14,11 @@ module BridgeApi
       # Include the operations this resource supports
       include BridgeApi::APIOperations::Create
 
+      # Class method to get a specific KYC link by ID
+      def self.retrieve(client, id, params = {})
+        client.get_kyc_link(id)
+      end
+
       # Class method to list all KYC links
       def self.list(client, params = {})
         client.list_kyc_links(params)
