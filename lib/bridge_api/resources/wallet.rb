@@ -51,6 +51,10 @@ module BridgeApi
         self.class.get_history(client, id, params)
       end
 
+      def self.get_for_customer(client, customer_id, wallet_id)
+        client.get_customer_wallet(customer_id, wallet_id)
+      end
+
       private
 
       # Parse a datetime string to a Time object

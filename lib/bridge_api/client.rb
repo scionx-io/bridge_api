@@ -46,7 +46,12 @@ module BridgeApi
         define_method('get_customer_wallets') do |customer_id, params = {}|
           request(:get, "customers/#{customer_id}/wallets", params)
         end
-        
+
+        # Special case: add method to get specific customer wallet
+        define_method('get_customer_wallet') do |customer_id, wallet_id|
+          request(:get, "customers/#{customer_id}/wallets/#{wallet_id}")
+        end
+
         # Special case: add method to create wallet for customer
         define_method('create_customer_wallet') do |customer_id, chain, idempotency_key: nil|
           payload = { chain: chain }
