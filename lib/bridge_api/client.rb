@@ -201,6 +201,7 @@ module BridgeApi
         'wallet' => 'wallet',
         'customer' => 'customer',
         'history' => 'transaction_history',
+        'kyc_link' => 'kyc_link',
       }[resource_name]
     end
 

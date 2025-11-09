@@ -9,6 +9,7 @@ module BridgeApi
         'customer' => BridgeApi::Resources::Customer,
         'transaction_history' => BridgeApi::Resources::TransactionHistory,
         'reward_rate' => BridgeApi::Resources::RewardRate,
+        'kyc_link' => BridgeApi::Resources::KycLink,
       }
     end
 
