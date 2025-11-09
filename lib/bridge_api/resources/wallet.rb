@@ -16,6 +16,11 @@ module BridgeApi
       include BridgeApi::APIOperations::Retrieve
       include BridgeApi::APIOperations::Create
 
+      def self.get_history(client, wallet_id, params = {})
+        # Use the client's public API to make the request
+        client.get_wallet_history(wallet_id, params)
+      end
+
       def initialize(attributes = {})
         super
       end
@@ -39,6 +44,11 @@ module BridgeApi
 
       def updated_at
         parse_datetime(@values[:updated_at])
+      end
+
+      # Get transaction history for this wallet
+      def history(client, params = {})
+        self.class.get_history(client, id, params)
       end
 
       private

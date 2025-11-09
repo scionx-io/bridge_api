@@ -34,6 +34,13 @@ module BridgeApi
       define_method("list_#{resource}") { |params = {}| request(:get, resource, params) }
       define_method("get_#{singular}")  { |id| request(:get, "#{resource}/#{id}") }
 
+      # Special case: add method to get wallet history
+      if resource == :wallets
+        define_method('get_wallet_history') do |wallet_id, params = {}|
+          request(:get, "wallets/#{wallet_id}/history", params)
+        end
+      end
+
       next if READ_ONLY_RESOURCES.include?(resource)
 
       define_method("create_#{singular}") do |payload|
@@ -110,27 +117,53 @@ module BridgeApi
       path_string = path.is_a?(URI) ? path.to_s : path
       path_parts = path_string.split('/').reject(&:empty?)
 
-      resource_name = if path_parts.length.positive?
-                        first = path_parts[0]
-                        second = path_parts[1]
-                        has_id = second&.match?(/^[a-zA-Z0-9_]+$/)
-                        is_resource = first&.match?(/[a-z]+/)
+      return nil if path_parts.empty?
 
-                        if path_parts.length >= 2 && has_id && is_resource
-                          first
-                        else
-                          path_parts.last
-                        end
-                      end
-
+      resource_name = extract_resource_name(path_parts)
       resource_name = resource_name.chomp('s') if resource_name
 
-      resource_name_to_hint = {
+      map_resource_to_hint(resource_name)
+    end
+
+    def extract_resource_name(parts)
+      case parts.length
+      when 1
+        parts.last
+      when 2
+        extract_from_two_parts(parts)
+      else
+        extract_from_three_or_more_parts(parts)
+      end
+    end
+
+    def extract_from_two_parts(parts)
+      first, second = parts
+      return parts.last unless valid_resource?(first) && looks_like_id?(second)
+
+      first
+    end
+
+    def extract_from_three_or_more_parts(parts)
+      first, second, third = parts
+      return first unless valid_resource?(first) && looks_like_id?(second)
+
+      third
+    end
+
+    def valid_resource?(name)
+      name&.match?(/[a-z]+/)
+    end
+
+    def looks_like_id?(value)
+      value&.match?(/^[a-zA-Z0-9_]+$/)
+    end
+
+    def map_resource_to_hint(resource_name)
+      {
         'wallet' => 'wallet',
         'customer' => 'customer',
-      }
-
-      resource_name_to_hint[resource_name]
+        'history' => 'transaction_history',
+      }[resource_name]
     end
 
     def build_error(status, response)
