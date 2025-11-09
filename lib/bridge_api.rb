@@ -56,4 +56,6 @@ module BridgeApi
   end
 end
 
+require_relative 'bridge_api/models/wallet'
+require_relative 'bridge_api/models/wallets_collection'
 require_relative 'bridge_api/client'

@@ -44,10 +44,12 @@ class BridgeWalletsTest < Minitest::Test
     assert response.success?
     assert_equal 200, response.status_code
     refute_nil response.data
-    assert_equal 1, response.data['count']
-    assert_equal 1, response.data['data'].length
-    assert_equal 'bw_123', response.data['data'][0]['id']
-    assert_equal 'solana', response.data['data'][0]['chain']
+    assert_instance_of BridgeApi::Models::WalletsCollection, response.data
+    assert_equal 1, response.data.count
+    assert_equal 1, response.data.size
+    assert_equal 'bw_123', response.data[0].id
+    assert_equal 'solana', response.data[0].chain
+    assert_equal '9kV3ZMehKVyxfHKCcaDLye3P9HHw2MP4jtQa2gKBUmCs', response.data[0].address
   end
 
   def test_list_wallets_with_parameters
@@ -80,10 +82,11 @@ class BridgeWalletsTest < Minitest::Test
     assert response.success?
     assert_equal 200, response.status_code
     refute_nil response.data
-    assert_equal 25, response.data['count']
-    assert_equal 1, response.data['data'].length
-    assert_equal 'bw_789', response.data['data'][0]['id']
-    assert_equal 'ethereum', response.data['data'][0]['chain']
+    assert_instance_of BridgeApi::Models::WalletsCollection, response.data
+    assert_equal 25, response.data.count
+    assert_equal 1, response.data.size
+    assert_equal 'bw_789', response.data[0].id
+    assert_equal 'ethereum', response.data[0].chain
   end
 
   def test_list_wallets_with_ending_before_parameter
@@ -116,10 +119,11 @@ class BridgeWalletsTest < Minitest::Test
     assert response.success?
     assert_equal 200, response.status_code
     refute_nil response.data
-    assert_equal 5, response.data['count']
-    assert_equal 1, response.data['data'].length
-    assert_equal 'bw_888', response.data['data'][0]['id']
-    assert_equal 'base', response.data['data'][0]['chain']
+    assert_instance_of BridgeApi::Models::WalletsCollection, response.data
+    assert_equal 5, response.data.count
+    assert_equal 1, response.data.size
+    assert_equal 'bw_888', response.data[0].id
+    assert_equal 'base', response.data[0].chain
   end
 
   def test_list_wallets_400_bad_request
@@ -241,11 +245,12 @@ class BridgeWalletsTest < Minitest::Test
     assert response.success?
     assert_equal 200, response.status_code
     refute_nil response.data
-    assert_equal 50, response.data['count']
-    assert_equal 2, response.data['data'].length
-    assert_equal 'bw_555', response.data['data'][0]['id']
-    assert_equal 'solana', response.data['data'][0]['chain']
-    assert_equal 'bw_666', response.data['data'][1]['id']
-    assert_equal 'ethereum', response.data['data'][1]['chain']
+    assert_instance_of BridgeApi::Models::WalletsCollection, response.data
+    assert_equal 50, response.data.count
+    assert_equal 2, response.data.size
+    assert_equal 'bw_555', response.data[0].id
+    assert_equal 'solana', response.data[0].chain
+    assert_equal 'bw_666', response.data[1].id
+    assert_equal 'ethereum', response.data[1].chain
   end
 end

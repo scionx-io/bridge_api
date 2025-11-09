@@ -49,7 +49,13 @@ module BridgeApi
     RESOURCES.each do |resource|
       singular = resource.to_s.sub(/s$/, '')
 
-      define_method("list_#{resource}") { |params = {}| request(:get, resource.to_s, params) }
+      case resource
+      when :wallets
+        define_method("list_#{resource}") { |params = {}| list_wallets_request(params) }
+      else
+        define_method("list_#{resource}") { |params = {}| request(:get, resource.to_s, params) }
+      end
+
       define_method("get_#{singular}") { |id| request(:get, "#{resource}/#{id}") }
       define_method("create_#{singular}") { |payload| request(:post, resource.to_s, payload) }
     end
@@ -62,9 +68,21 @@ module BridgeApi
       request(:get, 'exchange_rates', params)
     end
 
-
-
     private
+
+    # Special handling for listing wallets to return Wallet objects instead of raw JSON
+    def list_wallets_request(params = {})
+      response = request(:get, 'wallets', params)
+
+      # If the request was successful and we have data, convert to Wallet objects
+      if response.success? && response.data && response.data['data']
+        wallets_collection = BridgeApi::Models::WalletsCollection.new(response.data)
+        # Return a new response object with the collection instead of raw data
+        Response.new(response.status_code, wallets_collection, nil)
+      else
+        response
+      end
+    end
 
     def configure_client
       self.class.base_uri(@base_url)
