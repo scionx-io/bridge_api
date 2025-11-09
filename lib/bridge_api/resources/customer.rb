@@ -18,6 +18,11 @@ module BridgeApi
       include BridgeApi::APIOperations::Update
       include BridgeApi::APIOperations::Delete
 
+      def self.get_customer_wallets(client, customer_id, params = {})
+        # Use the client's public API to make the request
+        client.get_customer_wallets(customer_id, params)
+      end
+
       def initialize(attributes = {})
         super
       end
@@ -45,6 +50,10 @@ module BridgeApi
 
       def updated_at
         parse_datetime(@values[:updated_at])
+      end
+
+      def wallets(client, params = {})
+        self.class.get_customer_wallets(client, id, params)
       end
 
       private

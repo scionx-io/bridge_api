@@ -41,6 +41,13 @@ module BridgeApi
         end
       end
 
+      # Special case: add method to get customer wallets
+      if resource == :customers
+        define_method('get_customer_wallets') do |customer_id, params = {}|
+          request(:get, "customers/#{customer_id}/wallets", params)
+        end
+      end
+
       next if READ_ONLY_RESOURCES.include?(resource)
 
       define_method("create_#{singular}") do |payload|

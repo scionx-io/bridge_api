@@ -8,6 +8,7 @@ module BridgeApi
         'wallet' => BridgeApi::Resources::Wallet,
         'customer' => BridgeApi::Resources::Customer,
         'transaction_history' => BridgeApi::Resources::TransactionHistory,
+        'reward_rate' => BridgeApi::Resources::RewardRate,
       }
     end
 
