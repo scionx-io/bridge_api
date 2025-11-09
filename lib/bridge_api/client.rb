@@ -46,6 +46,13 @@ module BridgeApi
         define_method('get_customer_wallets') do |customer_id, params = {}|
           request(:get, "customers/#{customer_id}/wallets", params)
         end
+        
+        # Special case: add method to create wallet for customer
+        define_method('create_customer_wallet') do |customer_id, chain, idempotency_key: nil|
+          payload = { chain: chain }
+          # Use the standard request method to ensure proper response handling
+          request_with_idempotency(:post, "customers/#{customer_id}/wallets", payload, idempotency_key)
+        end
       end
 
       next if READ_ONLY_RESOURCES.include?(resource)
@@ -92,6 +99,12 @@ module BridgeApi
       handle_response(response)
     end
 
+    def request_with_idempotency(method, endpoint, payload, idempotency_key = nil)
+      options = build_request_options_for_idempotency(method, payload, idempotency_key)
+      response = self.class.send(method, "/#{endpoint}", options)
+      handle_response(response)
+    end
+
     def build_request_options(method, payload)
       return { query: payload } if %i[get delete].include?(method)
 
@@ -99,6 +112,19 @@ module BridgeApi
         body: payload.to_json,
         headers: { 'Idempotency-Key' => SecureRandom.uuid },
       }
+    end
+
+    def build_request_options_for_idempotency(method, payload, idempotency_key)
+      return { query: payload } if %i[get delete].include?(method)
+
+      options = { body: payload.to_json }
+      options[:headers] = {}
+      if idempotency_key
+        options[:headers]['Idempotency-Key'] = idempotency_key
+      else
+        options[:headers]['Idempotency-Key'] = SecureRandom.uuid
+      end
+      options
     end
 
     def retry_request(method, endpoint, payload, retries, response)

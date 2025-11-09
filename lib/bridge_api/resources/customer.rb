@@ -23,6 +23,11 @@ module BridgeApi
         client.get_customer_wallets(customer_id, params)
       end
 
+      def self.create_wallet_for_customer(client, customer_id, chain, idempotency_key: nil)
+        # Use the client's public API to make the request
+        client.create_customer_wallet(customer_id, chain, idempotency_key: idempotency_key)
+      end
+
       def initialize(attributes = {})
         super
       end
@@ -54,6 +59,10 @@ module BridgeApi
 
       def wallets(client, params = {})
         self.class.get_customer_wallets(client, id, params)
+      end
+
+      def create_wallet(client, chain, idempotency_key: nil)
+        self.class.create_wallet_for_customer(client, id, chain, idempotency_key: idempotency_key)
       end
 
       private
