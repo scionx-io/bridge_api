@@ -10,6 +10,9 @@ module BridgeApi
         'transaction_history' => BridgeApi::Resources::TransactionHistory,
         'reward_rate' => BridgeApi::Resources::RewardRate,
         'kyc_link' => BridgeApi::Resources::KycLink,
+        'webhook' => BridgeApi::Resources::Webhook,
+        'webhook_event' => BridgeApi::Resources::WebhookEvent,
+        'webhook_event_delivery_log' => BridgeApi::Resources::WebhookEventDeliveryLog,
       }
     end
 
@@ -21,11 +24,11 @@ module BridgeApi
       when Array
         data.map { |item| convert_to_bridged_object(item, opts) }
       when Hash
-        # Check if this is a list object (has 'data' key and maybe 'count')
-        if (data.key?('data') || data.key?(:data)) && (data.key?('count') || data.key?(:count))
+        # Check if this is a list object (has 'data' key, optional 'count')
+        if (data.key?('data') || data.key?(:data))
           # This looks like a list response, convert to ListObject
           list_data = symbolize_keys(data)
-          # Convert the data array items recursively
+          # Convert the data array items recursively if data exists
           if list_data[:data].is_a?(Array)
             list_data[:data] = list_data[:data].map do |item|
               convert_to_bridged_object(item, opts)

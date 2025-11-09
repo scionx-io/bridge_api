@@ -15,7 +15,7 @@ module BridgeApi
       include BridgeApi::APIOperations::Create
 
       # Class method to get a specific KYC link by ID
-      def self.retrieve(client, id, params = {})
+      def self.retrieve(client, id, _params = {})
         client.get_kyc_link(id)
       end
 

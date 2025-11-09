@@ -47,16 +47,30 @@ module BridgeApi
           request(:get, "customers/#{customer_id}/wallets", params)
         end
 
-        # Special case: add method to get specific customer wallet
         define_method('get_customer_wallet') do |customer_id, wallet_id|
           request(:get, "customers/#{customer_id}/wallets/#{wallet_id}")
         end
 
-        # Special case: add method to create wallet for customer
         define_method('create_customer_wallet') do |customer_id, chain, idempotency_key: nil|
           payload = { chain: chain }
-          # Use the standard request method to ensure proper response handling
           request_with_idempotency(:post, "customers/#{customer_id}/wallets", payload, idempotency_key)
+        end
+      end
+
+      # Special case: add methods for webhook specific operations
+      if resource == :webhooks
+        define_method('get_webhook_events') do |webhook_id|
+          request(:get, "webhooks/#{webhook_id}/events")
+        end
+
+        define_method('get_webhook_logs') do |webhook_id|
+          request(:get, "webhooks/#{webhook_id}/logs")
+        end
+
+        define_method('send_webhook_event') do |webhook_id, event_id, idempotency_key: nil|
+          payload = { event_id: event_id }
+          # Use the standard request method to ensure proper response handling
+          request_with_idempotency(:post, "webhooks/#{webhook_id}/send", payload, idempotency_key)
         end
       end
 
@@ -104,12 +118,6 @@ module BridgeApi
       handle_response(response)
     end
 
-    def request_with_idempotency(method, endpoint, payload, idempotency_key = nil)
-      options = build_request_options_for_idempotency(method, payload, idempotency_key)
-      response = self.class.send(method, "/#{endpoint}", options)
-      handle_response(response)
-    end
-
     def build_request_options(method, payload)
       return { query: payload } if %i[get delete].include?(method)
 
@@ -130,6 +138,13 @@ module BridgeApi
         options[:headers]['Idempotency-Key'] = SecureRandom.uuid
       end
       options
+    end
+
+    def request_with_idempotency(method, endpoint, payload, idempotency_key)
+      options = build_request_options_for_idempotency(method, payload, idempotency_key)
+      response = self.class.send(method, "/#{endpoint}", options)
+
+      handle_response(response)
     end
 
     def retry_request(method, endpoint, payload, retries, response)
@@ -185,7 +200,10 @@ module BridgeApi
       first, second, third = parts
       return first unless valid_resource?(first) && looks_like_id?(second)
 
-      third
+      # If third part exists and looks like a resource, use it
+      # e.g., /webhooks/{id}/events -> 'events'
+      # e.g., /customers/{id}/wallets -> 'wallets'
+      third || first
     end
 
     def valid_resource?(name)
@@ -201,7 +219,8 @@ module BridgeApi
         'wallet' => 'wallet',
         'customer' => 'customer',
         'history' => 'transaction_history',
-        'kyc_link' => 'kyc_link',
+        'event' => 'webhook_event',
+        'log' => 'webhook_event_delivery_log',
       }[resource_name]
     end
 
