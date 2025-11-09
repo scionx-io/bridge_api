@@ -42,6 +42,10 @@ module BridgeApi
         elsif resource_hint && object_classes.key?(resource_hint.to_s)
           # Use hint if no object field present
           construct_resource(resource_hint.to_s, symbolize_keys(data), opts)
+        elsif likely_resource_type(data)
+          # Auto-detect resource type based on common fields
+          object_name = likely_resource_type(data)
+          construct_resource(object_name, symbolize_keys(data), opts)
         else
           # For non-resource objects, return as is or convert nested objects
           convert_nested_objects(symbolize_keys(data))
@@ -72,6 +76,33 @@ module BridgeApi
       else
         klass.new(data)
       end
+    end
+
+    # Attempt to detect resource type based on common identifying fields
+    def self.likely_resource_type(data)
+      return false unless data.is_a?(Hash)
+
+      # Wallets are typically identified by id, chain, and address
+      key_present = data.key?(:id) && data.key?(:chain) && data.key?(:address)
+      return 'wallet' if key_present && object_classes.key?('wallet')
+
+      # Customers typically have name, email, etc.
+      key_present = data.key?(:id) && (data.key?(:email) || data.key?(:name) || data.key?(:customer_type))
+      return 'customer' if key_present && object_classes.key?('customer')
+
+      # Virtual accounts typically have account numbers, routing info
+      key_present = data.key?(:id) && data.key?(:account_number)
+      return 'virtual_account' if key_present && object_classes.key?('virtual_account')
+
+      # Transactions typically have amounts, dates
+      key_present = data.key?(:id) && (data.key?(:amount) || data.key?(:transaction_date))
+      return 'transaction_history' if key_present && object_classes.key?('transaction_history')
+
+      # KYC links typically have redirect URLs
+      key_present = data.key?(:id) && data.key?(:redirect_url)
+      return 'kyc_link' if key_present && object_classes.key?('kyc_link')
+
+      false
     end
 
     # Recursively convert nested objects that look like API resources
