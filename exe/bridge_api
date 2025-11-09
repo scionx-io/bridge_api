@@ -1,0 +1,6 @@
+#!/usr/bin/env ruby
+
+require 'bridge_api'
+
+puts "Bridge API Ruby Gem v#{BridgeApi::VERSION}"
+puts "For more information, visit: https://github.com/ScionX/bridge_api"

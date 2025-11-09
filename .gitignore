@@ -1,0 +1,173 @@
+# Environment variables and configuration files
+.env
+.env.local
+.env.*.local
+.env.production
+.env.staging
+.env.development
+
+# Secrets and credentials
+*.key
+*.pem
+*.crt
+*.cert
+*.secret
+*.token
+secrets.yml
+credentials.yml
+config/credentials.yml.enc
+
+# Database files
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Log files
+*.log
+logs/
+log/
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+.DS_Store
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Ruby specific
+*.gem
+*.rbc
+.bundle/
+.config/
+.yardoc/
+_yardoc/
+doc/
+lib/bundler/man/
+pkg/
+rdoc/
+Gemfile.lock
+Gemfile.*.lock
+coverage/
+InstalledFiles
+lib/bundler/man/
+# for a library or gem, you might want to ignore this:
+spec/reports/
+test/tmp/
+test/**/*.log
+test/output/
+.ruby-version
+.ruby-gemset
+
+# Process pid files
+*.pid
+
+# Local development settings
+config/initializers/secret_token.rb
+config/secrets.yml
+config/database.yml
+config/application.yml
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.c9/
+*.tmproj
+nbproject/
+
+# Backup files
+*~
+*.bak
+*.old
+*.orig
+*.rej
+*.~
+
+# Node.js (if present)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python (if present)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Build outputs
+build/
+dist/
+target/
+
+# IDE specific
+.vs/
+.vscode/
+
+# Compiled files
+*.o
+*.pyc
+*.pyo
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Package manager cache
+.npm/
+bower_components/
+.jspm/
+
+# System files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# API keys and tokens
+*apikey*
+*password*
+*secret*
+*token*
+*key.json
+*key.txt
+*password.txt
+*token.txt
+
+# Configuration files with sensitive info
+config/config.json
+config/config.yaml
+config/config.yml
+config/private.json
+config/keys.json
