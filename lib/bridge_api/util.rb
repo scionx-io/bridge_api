@@ -82,27 +82,30 @@ module BridgeApi
     def self.likely_resource_type(data)
       return false unless data.is_a?(Hash)
 
-      # Wallets are typically identified by id, chain, and address
-      key_present = data.key?(:id) && data.key?(:chain) && data.key?(:address)
-      return 'wallet' if key_present && object_classes.key?('wallet')
+      # Search for the first matching resource type
+      resource_checks = {
+        'wallet' => ->(d) { all_keys?(d, %i[id chain address]) },
+        'customer' => ->(d) { all_keys?(d, %i[id]) && any_key?(d, %i[email name customer_type]) },
+        'virtual_account' => ->(d) { all_keys?(d, %i[id account_number]) },
+        'transaction_history' => ->(d) { all_keys?(d, %i[id]) && any_key?(d, %i[amount transaction_date]) },
+        'kyc_link' => ->(d) { all_keys?(d, %i[id redirect_url]) },
+      }
 
-      # Customers typically have name, email, etc.
-      key_present = data.key?(:id) && (data.key?(:email) || data.key?(:name) || data.key?(:customer_type))
-      return 'customer' if key_present && object_classes.key?('customer')
-
-      # Virtual accounts typically have account numbers, routing info
-      key_present = data.key?(:id) && data.key?(:account_number)
-      return 'virtual_account' if key_present && object_classes.key?('virtual_account')
-
-      # Transactions typically have amounts, dates
-      key_present = data.key?(:id) && (data.key?(:amount) || data.key?(:transaction_date))
-      return 'transaction_history' if key_present && object_classes.key?('transaction_history')
-
-      # KYC links typically have redirect URLs
-      key_present = data.key?(:id) && data.key?(:redirect_url)
-      return 'kyc_link' if key_present && object_classes.key?('kyc_link')
+      resource_checks.each do |resource_type, check_proc|
+        return resource_type if check_proc.call(data) && object_classes.key?(resource_type)
+      end
 
       false
+    end
+
+    # Helper method to check if data has all the specified keys
+    def self.all_keys?(data, keys)
+      keys.all? { |key| data.key?(key) }
+    end
+
+    # Helper method to check if data has at least one of the specified keys
+    def self.any_key?(data, keys)
+      keys.any? { |key| data.key?(key) }
     end
 
     # Recursively convert nested objects that look like API resources

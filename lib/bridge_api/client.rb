@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+require 'httparty'
+require 'securerandom'
+require 'json'
+
 module BridgeApi
   class Client
     include HTTParty
@@ -25,85 +29,8 @@ module BridgeApi
 
       @base_url = sandbox_mode ? BASE_URLS[:sandbox] : BASE_URLS[:production]
       configure_client
-    end
 
-    # --- Dynamic Endpoints ---
-    (RESOURCES + READ_ONLY_RESOURCES).each do |resource|
-      singular = resource.to_s.sub(/s$/, '')
-
-      define_method("list_#{resource}") { |params = {}| request(:get, resource, params) }
-      define_method("get_#{singular}")  { |id| request(:get, "#{resource}/#{id}") }
-
-      # Special case: add method to get wallet history
-      if resource == :wallets
-        define_method('get_wallet_history') do |wallet_id, params = {}|
-          request(:get, "wallets/#{wallet_id}/history", params)
-        end
-      end
-
-      # Special case: add method to get customer wallets
-      if resource == :customers
-        define_method('get_customer_wallets') do |customer_id, params = {}|
-          request(:get, "customers/#{customer_id}/wallets", params)
-        end
-
-        define_method('get_customer_wallet') do |customer_id, wallet_id|
-          request(:get, "customers/#{customer_id}/wallets/#{wallet_id}")
-        end
-
-        # Virtual Account methods
-        define_method('list_customer_virtual_accounts') do |customer_id, params = {}|
-          request(:get, "customers/#{customer_id}/virtual_accounts", params)
-        end
-
-        define_method('get_customer_virtual_account') do |customer_id, virtual_account_id|
-          request(:get, "customers/#{customer_id}/virtual_accounts/#{virtual_account_id}")
-        end
-
-        define_method('create_customer_virtual_account') do |customer_id, params, idempotency_key: nil|
-          request_with_idempotency(:post, "customers/#{customer_id}/virtual_accounts", params, idempotency_key)
-        end
-
-        define_method('update_customer_virtual_account') do |customer_id, virtual_account_id, params|
-          request(:put, "customers/#{customer_id}/virtual_accounts/#{virtual_account_id}", params)
-        end
-
-        define_method('deactivate_customer_virtual_account') do |customer_id, virtual_account_id, idempotency_key: nil|
-          request_with_idempotency(:post, "customers/#{customer_id}/virtual_accounts/#{virtual_account_id}/deactivate", {}, idempotency_key)
-        end
-
-        define_method('reactivate_customer_virtual_account') do |customer_id, virtual_account_id, idempotency_key: nil|
-          request_with_idempotency(:post, "customers/#{customer_id}/virtual_accounts/#{virtual_account_id}/reactivate", {}, idempotency_key)
-        end
-
-        define_method('create_customer_wallet') do |customer_id, chain, idempotency_key: nil|
-          payload = { chain: chain }
-          request_with_idempotency(:post, "customers/#{customer_id}/wallets", payload, idempotency_key)
-        end
-      end
-
-      # Special case: add methods for webhook specific operations
-      if resource == :webhooks
-        define_method('get_webhook_events') do |webhook_id|
-          request(:get, "webhooks/#{webhook_id}/events")
-        end
-
-        define_method('get_webhook_logs') do |webhook_id|
-          request(:get, "webhooks/#{webhook_id}/logs")
-        end
-
-        define_method('send_webhook_event') do |webhook_id, event_id, idempotency_key: nil|
-          payload = { event_id: event_id }
-          # Use the standard request method to ensure proper response handling
-          request_with_idempotency(:post, "webhooks/#{webhook_id}/send", payload, idempotency_key)
-        end
-      end
-
-      next if READ_ONLY_RESOURCES.include?(resource)
-
-      define_method("create_#{singular}") do |payload|
-        request(:post, resource, payload)
-      end
+      self.class.define_dynamic_resource_methods
     end
 
     # --- Special Endpoints ---
@@ -115,7 +42,10 @@ module BridgeApi
       response = request(:get, 'wallets/total_balances')
       return response unless response.success? && response.data.is_a?(Array)
 
-      converted = response.data.map { |item| BridgeApi::Resources::TotalBalance.new(item) }
+      converted = response.data.map do |item|
+        BridgeApi::Resources::TotalBalance.new(item)
+      end
+
       Response.new(response.status_code, converted, nil)
     end
 
@@ -143,33 +73,18 @@ module BridgeApi
       handle_response(response)
     end
 
-    def build_request_options(method, payload)
-      return { query: payload } if %i[get delete].include?(method)
-
-      {
-        body: payload.to_json,
-        headers: { 'Idempotency-Key' => SecureRandom.uuid },
-      }
-    end
-
-    def build_request_options_for_idempotency(method, payload, idempotency_key)
-      return { query: payload } if %i[get delete].include?(method)
-
-      options = { body: payload.to_json }
-      options[:headers] = {}
-      if idempotency_key
-        options[:headers]['Idempotency-Key'] = idempotency_key
+    def build_request_options(method, payload, idempotency_key: nil)
+      if %i[get delete].include?(method)
+        { query: payload }
       else
-        options[:headers]['Idempotency-Key'] = SecureRandom.uuid
+        headers = { 'Idempotency-Key' => idempotency_key || SecureRandom.uuid }
+        { body: payload.to_json, headers: headers }
       end
-      options
     end
 
     def request_with_idempotency(method, endpoint, payload, idempotency_key)
-      options = build_request_options_for_idempotency(method, payload, idempotency_key)
-      response = self.class.send(method, "/#{endpoint}", options)
-
-      handle_response(response)
+      options = build_request_options(method, payload, idempotency_key: idempotency_key)
+      handle_response(self.class.send(method, "/#{endpoint}", options))
     end
 
     def retry_request(method, endpoint, payload, retries, response)
@@ -177,120 +92,155 @@ module BridgeApi
       request(method, endpoint, payload, retries + 1)
     end
 
+    # --- Class Methods ---
+    class << self
+      def define_dynamic_resource_methods
+        (RESOURCES + READ_ONLY_RESOURCES).each do |resource|
+          define_resource_methods(resource)
+        end
+      end
+
+      private
+
+      def define_resource_methods(resource)
+        singular = resource.to_s.sub(/s$/, '')
+
+        define_method("list_#{resource}") { |params = {}| request(:get, resource, params) }
+        define_method("get_#{singular}") { |id| request(:get, "#{resource}/#{id}") }
+
+        define_special_methods(resource) unless READ_ONLY_RESOURCES.include?(resource)
+      end
+
+      def define_special_methods(resource)
+        send("define_#{resource}_methods") if respond_to?("define_#{resource}_methods", true)
+      end
+
+      # --- Define resource-specific helpers ---
+      def define_wallets_methods
+        define_method('get_wallet_history') do |wallet_id, params = {}|
+          request(:get, "wallets/#{wallet_id}/history", params)
+        end
+      end
+
+      def define_customers_wallet_methods
+        define_method('get_customer_wallets') do |customer_id, params = {}|
+          request(:get, "customers/#{customer_id}/wallets", params)
+        end
+
+        define_method('get_customer_wallet') do |customer_id, wallet_id|
+          request(:get, "customers/#{customer_id}/wallets/#{wallet_id}")
+        end
+
+        define_method('create_customer_wallet') do |customer_id, chain, idempotency_key: nil|
+          payload = { chain: chain }
+          request_with_idempotency(:post, "customers/#{customer_id}/wallets", payload, idempotency_key)
+        end
+      end
+
+      def define_customers_virtual_account_methods
+        define_method('list_customer_virtual_accounts') do |customer_id, params = {}|
+          request(:get, "customers/#{customer_id}/virtual_accounts", params)
+        end
+
+        define_method('get_customer_virtual_account') do |customer_id, virtual_account_id|
+          request(:get, "customers/#{customer_id}/virtual_accounts/#{virtual_account_id}")
+        end
+
+        define_method('create_customer_virtual_account') do |customer_id, params, idempotency_key: nil|
+          request_with_idempotency(
+            :post,
+            "customers/#{customer_id}/virtual_accounts",
+            params,
+            idempotency_key,
+          )
+        end
+
+        define_method('update_customer_virtual_account') do |customer_id,
+                                                             virtual_account_id,
+                                                             params,
+                                                             idempotency_key: nil|
+          request_with_idempotency(
+            :put,
+            "customers/#{customer_id}/virtual_accounts/#{virtual_account_id}",
+            params,
+            idempotency_key,
+          )
+        end
+
+        define_method('deactivate_customer_virtual_account') do |customer_id, virtual_account_id, idempotency_key: nil|
+          request_with_idempotency(
+            :post,
+            "customers/#{customer_id}/virtual_accounts/#{virtual_account_id}/deactivate",
+            {},
+            idempotency_key,
+          )
+        end
+
+        define_method('reactivate_customer_virtual_account') do |customer_id, virtual_account_id, idempotency_key: nil|
+          request_with_idempotency(
+            :post,
+            "customers/#{customer_id}/virtual_accounts/#{virtual_account_id}/reactivate",
+            {},
+            idempotency_key,
+          )
+        end
+      end
+
+      def define_customers_methods
+        define_customers_wallet_methods
+        define_customers_virtual_account_methods
+      end
+
+      def define_webhooks_methods
+        define_method('get_webhook_events') { |webhook_id| request(:get, "webhooks/#{webhook_id}/events") }
+        define_method('get_webhook_logs') { |webhook_id| request(:get, "webhooks/#{webhook_id}/logs") }
+        define_method('send_webhook_event') do |webhook_id, event_id, idempotency_key: nil|
+          payload = { event_id: event_id }
+          request_with_idempotency(:post, "webhooks/#{webhook_id}/send", payload, idempotency_key)
+        end
+      end
+
+      private :define_resource_methods, :define_special_methods,
+              :define_wallets_methods, :define_customers_methods,
+              :define_customers_wallet_methods, :define_customers_virtual_account_methods,
+              :define_webhooks_methods
+    end
+
+    # --- Response Handling ---
     def handle_response(response)
       status = response.code
-      request_path = response.request.path
-      data = if (200..299).cover?(status)
-               hint = determine_resource_hint_from_endpoint(request_path)
-               BridgeApi::Util.convert_to_bridged_object(
-                 response.parsed_response,
-                 resource_hint: hint,
-               )
-             end
+      raw_data = (200..299).cover?(status) ? response.parsed_response : nil
+      data = raw_data ? BridgeApi::Util.convert_to_bridged_object(raw_data) : raw_data
       error = data.nil? ? build_error(status, response) : nil
       Response.new(status, data, error)
     end
 
-    def determine_resource_hint_from_endpoint(path)
-      path_string = path.is_a?(URI) ? path.to_s : path
-      path_parts = path_string.split('/').reject(&:empty?)
-
-      return nil if path_parts.empty?
-
-      resource_name = extract_resource_name(path_parts)
-      resource_name = resource_name.chomp('s') if resource_name
-
-      map_resource_to_hint(resource_name)
-    end
-
-    def extract_resource_name(parts)
-      case parts.length
-      when 1
-        parts.last
-      when 2
-        extract_from_two_parts(parts)
-      else
-        extract_from_three_or_more_parts(parts)
-      end
-    end
-
-    def extract_from_two_parts(parts)
-      first, second = parts
-      return parts.last unless valid_resource?(first) && looks_like_id?(second)
-
-      first
-    end
-
-    def extract_from_three_or_more_parts(parts)
-      first, second, third = parts
-      return first unless valid_resource?(first) && looks_like_id?(second)
-
-      # If third part exists and looks like a resource, use it
-      # e.g., /webhooks/{id}/events -> 'events'
-      # e.g., /customers/{id}/wallets -> 'wallets'
-      third || first
-    end
-
-    def valid_resource?(name)
-      name&.match?(/[a-z]+/)
-    end
-
-    def looks_like_id?(value)
-      value&.match?(/^[a-zA-Z0-9_]+$/)
-    end
-
-    def map_resource_to_hint(resource_name)
-      # Map plural resource names to their singular equivalents for resource hints
-      resource_name_mapping = {
-        'wallets' => 'wallet',
-        'customers' => 'customer',
-        'histories' => 'transaction_history',
-        'events' => 'webhook_event',
-        'logs' => 'webhook_event_delivery_log',
-        'virtual_accounts' => 'virtual_account',
-      }
-      
-      resource_name_mapping[resource_name] || resource_name.chomp('s')  # fallback to chomping 's' for other resources
-    end
-
     def build_error(status, response)
-      parsed_response = response.parsed_response
-      if parsed_response.is_a?(Hash)
-        msg = parsed_response['message']
-      elsif parsed_response.is_a?(String)
-        begin
-          json_response = JSON.parse(parsed_response)
-          msg = json_response.is_a?(Hash) ? json_response['message'] : nil
-        rescue JSON::ParserError
-          msg = nil
-        end
-      else
-        msg = nil
-      end
+      msg = response.parsed_response.is_a?(Hash) ? response.parsed_response['message'] : nil
 
       case status
-      when 400 then ApiError.new(msg || 'Bad request')
-      when 401 then AuthenticationError.new('Invalid API key')
-      when 403 then ForbiddenError.new(msg || 'Forbidden')
-      when 404 then NotFoundError.new('Resource not found')
-      when 429 then RateLimitError.new(response.headers['X-RateLimit-Reset'])
-      when 503 then ServiceUnavailableError.new('Service temporarily unavailable')
-      else ApiError.new(msg || 'API request failed')
+      when 400 then BridgeApi::ApiError.new(msg || 'Bad request')
+      when 401 then BridgeApi::AuthenticationError.new('Invalid API key')
+      when 403 then BridgeApi::ForbiddenError.new(msg || 'Forbidden')
+      when 404 then BridgeApi::NotFoundError.new('Resource not found')
+      when 429 then BridgeApi::RateLimitError.new(response.headers['X-RateLimit-Reset'])
+      when 503 then BridgeApi::ServiceUnavailableError.new('Service temporarily unavailable')
+      else BridgeApi::ApiError.new(msg || 'API request failed')
       end
     end
-  end
 
-  # --- Response Wrapper ---
-  class Response
-    attr_reader :status_code, :data, :error
+    # --- Response Wrapper ---
+    class Response
+      attr_reader :status_code, :data, :error
 
-    def initialize(status_code, data, error)
-      @status_code = status_code
-      @data = data
-      @error = error
+      def initialize(status_code, data, error)
+        @status_code = status_code
+        @data = data
+        @error = error
+      end
+
+      def success? = @error.nil?
     end
-
-    def success? = @error.nil?
   end
 
   # --- Errors ---
