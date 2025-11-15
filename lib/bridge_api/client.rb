@@ -92,11 +92,75 @@ module BridgeApi
       request(method, endpoint, payload, retries + 1)
     end
 
+    # --- Resource Accessor Support ---
+    class ResourceAccessor
+      def initialize(client, resource_name)
+        @client = client
+        @resource_name = resource_name
+        @singular_resource_name = resource_name.to_s.sub(/s$/, '')
+      end
+
+      def list(params = {})
+        @client.send("list_#{@resource_name}", params)
+      end
+
+      def get(id)
+        @client.send("get_#{@singular_resource_name}", id)
+      end
+
+      def retrieve(id)
+        @client.send("get_#{@singular_resource_name}", id)
+      end
+
+      def create(params = {}, idempotency_key: nil)
+        method_name = idempotency_key ? "create_#{@singular_resource_name}_with_idempotency" : "create_#{@singular_resource_name}"
+        if @client.respond_to?(method_name)
+          @client.send(method_name, params, idempotency_key: idempotency_key)
+        else
+          @client.request(:post, @resource_name, params)
+        end
+      end
+
+      def update(id, params = {}, idempotency_key: nil)
+        method_name = idempotency_key ? "update_#{@singular_resource_name}_with_idempotency" : "update_#{@singular_resource_name}"
+        if @client.respond_to?(method_name)
+          @client.send(method_name, id, params, idempotency_key: idempotency_key)
+        else
+          @client.request(:patch, "#{@resource_name}/#{id}", params)
+        end
+      end
+
+      def delete(id)
+        method_name = "delete_#{@singular_resource_name}"
+        if @client.respond_to?(method_name)
+          @client.send(method_name, id)
+        else
+          @client.request(:delete, "#{@resource_name}/#{id}", {})
+        end
+      end
+
+      private
+
+      def method_missing(method_name, *args, &block)
+        # Delegate other methods to the client that start with the resource name
+        if @client.respond_to?(method_name)
+          @client.send(method_name, *args)
+        else
+          super
+        end
+      end
+
+      def respond_to_missing?(method_name, include_private = false)
+        @client.respond_to?(method_name) || super
+      end
+    end
+
     # --- Class Methods ---
     class << self
       def define_dynamic_resource_methods
         (RESOURCES + READ_ONLY_RESOURCES).each do |resource|
           define_resource_methods(resource)
+          define_resource_accessor(resource)
         end
       end
 
@@ -109,6 +173,16 @@ module BridgeApi
         define_method("get_#{singular}") { |id| request(:get, "#{resource}/#{id}") }
 
         define_special_methods(resource) unless READ_ONLY_RESOURCES.include?(resource)
+      end
+
+      def define_resource_accessor(resource)
+        define_method(resource) do
+          instance_variable_name = "@#{resource}_accessor"
+          unless instance_variable_defined?(instance_variable_name)
+            instance_variable_set(instance_variable_name, ResourceAccessor.new(self, resource))
+          end
+          instance_variable_get(instance_variable_name)
+        end
       end
 
       def define_special_methods(resource)
@@ -200,7 +274,7 @@ module BridgeApi
         end
       end
 
-      private :define_resource_methods, :define_special_methods,
+      private :define_resource_methods, :define_special_methods, :define_resource_accessor,
               :define_wallets_methods, :define_customers_methods,
               :define_customers_wallet_methods, :define_customers_virtual_account_methods,
               :define_webhooks_methods
