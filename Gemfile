@@ -16,3 +16,5 @@ group :development do
   gem 'webmock', '~> 3.26'
   gem 'yard', '~> 0.9.37'
 end
+
+gem "dotenv", "~> 3.1"

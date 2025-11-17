@@ -20,11 +20,24 @@ module BridgeApi
       'virtual_account' => { all: %i[id account_number] },
       'transaction_history' => { all: %i[id], any: %i[amount transaction_date] },
       'kyc_link' => { all: %i[id redirect_url] },
+      'webhook' => { all: %i[id url status] },
     }.freeze
 
     class << self
       # Convert API response data to appropriate resource objects
       def convert_to_bridged_object(data, opts = {})
+        # Detect if data is a Client::Response and unwrap it before the case statement
+        if data.is_a?(BridgeApi::Client::Response)
+          # Extract payload from response (prefer response.data if present, otherwise response.body)
+          if data.data
+            data = data.data
+          elsif data.body
+            data = data.body
+          else
+            data = data.to_h if data.respond_to?(:to_h)
+          end
+        end
+
         case data
         when Array
           data.map { |item| convert_to_bridged_object(item, opts) }

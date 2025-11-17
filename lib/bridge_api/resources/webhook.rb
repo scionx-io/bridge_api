@@ -21,7 +21,7 @@ module BridgeApi
       end
 
       def self.create(client, params = {})
-        client.create_webhook(params)
+        super(client, params)
       end
 
       # Specific accessor methods for convenience

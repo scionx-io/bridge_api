@@ -13,8 +13,10 @@ module BridgeApi
           response = client.request(:get, resource_path, params)
           return response unless response.success?
 
-          # Create a list response - for now return as is but can be enhanced later
-          response
+          BridgeApi::Util.convert_to_bridged_object(
+            response,
+            resource_hint: self::OBJECT_NAME,
+          )
         end
       end
     end

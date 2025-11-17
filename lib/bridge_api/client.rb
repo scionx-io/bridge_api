@@ -117,7 +117,7 @@ module BridgeApi
         if @client.respond_to?(method_name)
           @client.send(method_name, params, idempotency_key: idempotency_key)
         else
-          @client.request(:post, @resource_name, params)
+          @client.send(:request, :post, @resource_name, params)
         end
       end
 
@@ -126,7 +126,7 @@ module BridgeApi
         if @client.respond_to?(method_name)
           @client.send(method_name, id, params, idempotency_key: idempotency_key)
         else
-          @client.request(:patch, "#{@resource_name}/#{id}", params)
+          @client.send(:request, :patch, "#{@resource_name}/#{id}", params)
         end
       end
 
@@ -135,7 +135,7 @@ module BridgeApi
         if @client.respond_to?(method_name)
           @client.send(method_name, id)
         else
-          @client.request(:delete, "#{@resource_name}/#{id}", {})
+          @client.send(:request, :delete, "#{@resource_name}/#{id}", {})
         end
       end
 
