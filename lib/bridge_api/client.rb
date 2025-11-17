@@ -77,7 +77,12 @@ module BridgeApi
       if %i[get delete].include?(method)
         { query: payload }
       else
-        headers = { 'Idempotency-Key' => idempotency_key || SecureRandom.uuid }
+        # Only add Idempotency-Key if explicitly provided or for POST/PATCH
+        # PUT requests (like webhook updates) don't support idempotency keys
+        headers = {}
+        if idempotency_key || %i[post patch].include?(method)
+          headers['Idempotency-Key'] = idempotency_key || SecureRandom.uuid
+        end
         { body: payload.to_json, headers: headers }
       end
     end
@@ -126,7 +131,9 @@ module BridgeApi
         if @client.respond_to?(method_name)
           @client.send(method_name, id, params, idempotency_key: idempotency_key)
         else
-          @client.send(:request, :patch, "#{@resource_name}/#{id}", params)
+          # Use PUT for webhooks, PATCH for others
+          http_method = @resource_name == :webhooks ? :put : :patch
+          @client.send(:request, http_method, "#{@resource_name}/#{id}", params)
         end
       end
 
