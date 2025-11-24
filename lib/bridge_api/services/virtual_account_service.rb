@@ -8,7 +8,7 @@ module BridgeApi
     # Service class for handling Virtual Account-related operations
     class VirtualAccountService < BaseService
       def initialize(client)
-        super(client)
+        super
         @resource_class = BridgeApi::VirtualAccount
       end
 

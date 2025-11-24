@@ -8,7 +8,7 @@ module BridgeApi
     # Service class for handling Wallet-related operations
     class WalletService < BaseService
       def initialize(client)
-        super(client)
+        super
         @resource_class = BridgeApi::Wallet
       end
 

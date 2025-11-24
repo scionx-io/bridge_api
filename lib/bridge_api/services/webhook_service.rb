@@ -8,7 +8,7 @@ module BridgeApi
     # Service class for handling Webhook-related operations
     class WebhookService < BaseService
       def initialize(client)
-        super(client)
+        super
         @resource_class = BridgeApi::Webhook
       end
 

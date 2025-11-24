@@ -21,7 +21,7 @@ module BridgeApi
       end
 
       def self.create(client, params = {})
-        super(client, params)
+        super
       end
 
       # Specific accessor methods for convenience

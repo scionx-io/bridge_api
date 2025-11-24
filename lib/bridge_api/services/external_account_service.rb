@@ -8,7 +8,7 @@ module BridgeApi
     # Service class for handling External Account-related operations
     class ExternalAccountService < BaseService
       def initialize(client)
-        super(client)
+        super
         @resource_class = BridgeApi::ExternalAccount
       end
 

@@ -17,4 +17,4 @@ group :development do
   gem 'yard', '~> 0.9.37'
 end
 
-gem "dotenv", "~> 3.1"
+gem 'dotenv', '~> 3.1'
