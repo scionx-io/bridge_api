@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../base_resource'
+require_relative 'base_service'
 require_relative '../client'
 
 module BridgeApi
@@ -16,8 +16,7 @@ module BridgeApi
       # @param webhook_id [String] The ID of the webhook
       # @return [BridgeApi::Webhook] The webhook object
       def get(webhook_id)
-        resource = @resource_class.new(@client)
-        resource.retrieve(webhook_id)
+        @resource_class.retrieve(@client, webhook_id)
       end
 
       # List all webhooks
