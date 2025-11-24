@@ -26,39 +26,50 @@ module BridgeApi
     class << self
       # Convert API response data to appropriate resource objects
       def convert_to_bridged_object(data, opts = {})
-        # Detect if data is a Client::Response and unwrap it before the case statement
-        if data.is_a?(BridgeApi::Client::Response)
-          # Extract payload from response (prefer response.data if present, otherwise response.body)
-          if data.data
-            data = data.data
-          elsif data.body
-            data = data.body
-          else
-            data = data.to_h if data.respond_to?(:to_h)
-          end
-        end
+        # Detect if data is a Client::Response and unwrap it
+        data = unwrap_client_response(data)
 
         case data
         when Array
           data.map { |item| convert_to_bridged_object(item, opts) }
         when Hash
-          if data.key?('data') || data.key?(:data)
-            convert_list_object(data, opts)
-          elsif (object_name = detect_resource_type_from_object_field(data))
-            construct_resource(object_name, symbolize_keys(data), opts)
-          elsif (resource_hint = opts[:resource_hint]) && OBJECT_CLASS_NAMES.key?(resource_hint.to_s)
-            construct_resource(resource_hint.to_s, symbolize_keys(data), opts)
-          elsif (detected_type = detect_resource_type(data))
-            construct_resource(detected_type, symbolize_keys(data), opts)
-          else
-            symbolize_keys(data).transform_values { |value| convert_to_bridged_object(value, opts) }
-          end
+          process_hash_data(data, opts)
         else
           data
         end
       end
 
       private
+
+      def unwrap_client_response(data)
+        # Detect if data is a Client::Response and unwrap it
+        return data unless data.is_a?(BridgeApi::Client::Response)
+
+        # Extract payload from response (prefer response.data if present, otherwise response.body)
+        if data.data
+          data.data
+        elsif data.body
+          data.body
+        elsif data.respond_to?(:to_h)
+          data.to_h
+        else
+          data
+        end
+      end
+
+      def process_hash_data(data, opts)
+        if data.key?('data') || data.key?(:data)
+          convert_list_object(data, opts)
+        elsif (object_name = detect_resource_type_from_object_field(data))
+          construct_resource(object_name, symbolize_keys(data), opts)
+        elsif (resource_hint = opts[:resource_hint]) && OBJECT_CLASS_NAMES.key?(resource_hint.to_s)
+          construct_resource(resource_hint.to_s, symbolize_keys(data), opts)
+        elsif (detected_type = detect_resource_type(data))
+          construct_resource(detected_type, symbolize_keys(data), opts)
+        else
+          symbolize_keys(data).transform_values { |value| convert_to_bridged_object(value, opts) }
+        end
+      end
 
       def detect_resource_type_from_object_field(data)
         object_name = data['object'] || data[:object]

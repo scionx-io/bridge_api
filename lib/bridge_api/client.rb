@@ -118,7 +118,11 @@ module BridgeApi
       end
 
       def create(params = {}, idempotency_key: nil)
-        method_name = idempotency_key ? "create_#{@singular_resource_name}_with_idempotency" : "create_#{@singular_resource_name}"
+        method_name = if idempotency_key
+                        "create_#{@singular_resource_name}_with_idempotency"
+                      else
+                        "create_#{@singular_resource_name}"
+                      end
         if @client.respond_to?(method_name)
           @client.send(method_name, params, idempotency_key: idempotency_key)
         else
@@ -127,7 +131,11 @@ module BridgeApi
       end
 
       def update(id, params = {}, idempotency_key: nil)
-        method_name = idempotency_key ? "update_#{@singular_resource_name}_with_idempotency" : "update_#{@singular_resource_name}"
+        method_name = if idempotency_key
+                        "update_#{@singular_resource_name}_with_idempotency"
+                      else
+                        "update_#{@singular_resource_name}"
+                      end
         if @client.respond_to?(method_name)
           @client.send(method_name, id, params, idempotency_key: idempotency_key)
         else
@@ -148,10 +156,10 @@ module BridgeApi
 
       private
 
-      def method_missing(method_name, *args, &block)
+      def method_missing(method_name, *, &)
         # Delegate other methods to the client that start with the resource name
         if @client.respond_to?(method_name)
-          @client.send(method_name, *args)
+          @client.send(method_name, *)
         else
           super
         end
