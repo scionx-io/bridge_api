@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative '../base_resource'
-require_relative '../client'
-
 module BridgeApi
   module Services
     # Service class for handling Wallet-related operations
