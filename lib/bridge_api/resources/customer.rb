@@ -19,32 +19,26 @@ module BridgeApi
       include BridgeApi::APIOperations::Delete
 
       def self.get_customer_wallets(client, customer_id, params = {})
-        # Use the client's public API to make the request
         client.get_customer_wallets(customer_id, params)
       end
 
       def self.create_wallet_for_customer(client, customer_id, chain, idempotency_key: nil)
-        # Use the client's public API to make the request
         client.create_customer_wallet(customer_id, chain, idempotency_key: idempotency_key)
       end
 
       def self.get_customer_wallet(client, customer_id, wallet_id)
-        # Use the client's public API to make the request
         client.get_customer_wallet(customer_id, wallet_id)
       end
 
       def self.get_customer_virtual_accounts(client, customer_id, params = {})
-        # Use the client's public API to make the request
         client.list_customer_virtual_accounts(customer_id, params)
       end
 
       def self.get_customer_virtual_account(client, customer_id, virtual_account_id)
-        # Use the client's public API to make the request
         client.get_customer_virtual_account(customer_id, virtual_account_id)
       end
 
       def self.create_customer_virtual_account(client, customer_id, params, idempotency_key: nil)
-        # Use the client's public API to make the request
         client.create_customer_virtual_account(customer_id, params, idempotency_key: idempotency_key)
       end
 
@@ -52,23 +46,7 @@ module BridgeApi
         super
       end
 
-      # Specific accessor methods for convenience
-      def id
-        @values[:id]
-      end
-
-      def email
-        @values[:email]
-      end
-
-      def first_name
-        @values[:first_name]
-      end
-
-      def last_name
-        @values[:last_name]
-      end
-
+      # Override datetime accessors to return parsed Time objects
       def created_at
         parse_datetime(@values[:created_at])
       end
@@ -100,6 +78,7 @@ module BridgeApi
       def create_virtual_account(client, params, idempotency_key: nil)
         self.class.create_customer_virtual_account(client, id, params, idempotency_key: idempotency_key)
       end
+
 
       private
 

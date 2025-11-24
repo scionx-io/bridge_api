@@ -52,6 +52,7 @@ module BridgeApi
         parse_datetime(@values[:event_created_at])
       end
 
+
       private
 
       # Parse a datetime string to a Time object

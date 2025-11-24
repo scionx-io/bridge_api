@@ -21,7 +21,7 @@ module BridgeApi
       end
 
       def self.create(client, params = {})
-        client.create_webhook(params)
+        super
       end
 
       # Specific accessor methods for convenience
@@ -48,6 +48,7 @@ module BridgeApi
       def created_at
         parse_datetime(@values[:created_at])
       end
+
 
       private
 

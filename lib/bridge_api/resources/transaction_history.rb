@@ -36,6 +36,7 @@ module BridgeApi
         @values[:destination]
       end
 
+
       private
 
       # Parse a datetime string to a Time object

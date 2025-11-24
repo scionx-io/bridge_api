@@ -173,3 +173,5 @@ config/private.json
 config/keys.json
 stripe-ruby/
 *.md
+/exemples
+/exemples

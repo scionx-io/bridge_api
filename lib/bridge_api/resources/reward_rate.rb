@@ -20,6 +20,7 @@ module BridgeApi
         parse_datetime(@values[:expires_at])
       end
 
+
       private
 
       # Parse a datetime string to a Time object

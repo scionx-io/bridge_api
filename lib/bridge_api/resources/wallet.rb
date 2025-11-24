@@ -55,6 +55,7 @@ module BridgeApi
         client.get_customer_wallet(customer_id, wallet_id)
       end
 
+
       private
 
       # Parse a datetime string to a Time object
