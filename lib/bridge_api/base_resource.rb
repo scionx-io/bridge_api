@@ -121,11 +121,27 @@ module BridgeApi
       @unsaved_values.add(key)
     end
 
+    # Dynamic method handling for all attributes in @values
+    # Only allows attribute access without arguments, raises error if arguments are provided
+    def method_missing(method_name, *args)
+      if args.empty? && @values.key?(method_name)
+        @values[method_name]
+      else
+        super
+      end
+    end
+
+    def respond_to_missing?(method_name, include_private = false)
+      @values.key?(method_name) || super
+    end
+
     # Convert values to appropriate types when possible
     def convert_value(value)
       case value
       when Array
         value.map { |v| convert_value(v) }
+      when Hash
+        value.each_with_object({}) { |(k, v), hash| hash[k.to_sym] = convert_value(v) }
       else
         value
       end

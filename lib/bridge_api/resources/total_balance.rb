@@ -25,19 +25,6 @@ module BridgeApi
       def contract_address
         @values[:contract_address]
       end
-
-      # Dynamic method handling for all attributes in @values
-      def method_missing(method_name, *args)
-        if @values.key?(method_name)
-          @values[method_name]
-        else
-          super
-        end
-      end
-
-      def respond_to_missing?(method_name, include_private = false)
-        @values.key?(method_name) || super
-      end
     end
   end
 end

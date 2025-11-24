@@ -79,18 +79,6 @@ module BridgeApi
         self.class.create_customer_virtual_account(client, id, params, idempotency_key: idempotency_key)
       end
 
-      # Dynamic method handling for all attributes in @values
-      def method_missing(method_name, *args)
-        if @values.key?(method_name)
-          @values[method_name]
-        else
-          super
-        end
-      end
-
-      def respond_to_missing?(method_name, include_private = false)
-        @values.key?(method_name) || super
-      end
 
       private
 
