@@ -17,7 +17,7 @@ module BridgeApi
     RESOURCE_PATTERNS = {
       'wallet' => { all: %i[id chain address] },
       'customer' => { all: %i[id], any: %i[email name customer_type] },
-      'virtual_account' => { all: %i[id account_number] },
+      'virtual_account' => { all: %i[id], any: %i[status customer_id source_deposit_instructions] },
       'transaction_history' => { all: %i[id], any: %i[amount transaction_date] },
       'kyc_link' => { all: %i[id redirect_url] },
       'webhook' => { all: %i[id url status] },
